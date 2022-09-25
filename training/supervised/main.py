@@ -192,37 +192,7 @@ device = torch.device("cuda" if use_cuda else "cpu")
 kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
 pca = None
 
-if args.dataset == 'mnist':
-    mnist_data = datasets.MNIST('../../data/mnist/', train=True, download=True, transform=transforms.Compose([transforms.ToTensor()]))
-
-    train_loader = torch.utils.data.DataLoader(mnist_data, shuffle=True, batch_size=args.batch_size, **kwargs)
-    test_loader = torch.utils.data.DataLoader(datasets.MNIST('../../data/mnist/', train=False, transform=transforms.Compose([
-        transforms.ToTensor()])),
-        batch_size=args.batch_size, shuffle=True, **kwargs)
-
-    if args.embed:
-        pca = embed_pca(mnist_data, args.embed_dim)
-        model = MLP(args.embed_dim, 10, 1000, 3).to(device)
-    else:
-        model = MnistNet().to(device)
-
-elif args.dataset == 'fashion':
-    fashion_data = datasets.FashionMNIST('../../data/fashionmnist/', train=True, download=True,
-                                         transform=transforms.Compose([transforms.ToTensor()]))
-
-    train_loader = torch.utils.data.DataLoader(fashion_data, shuffle=True, batch_size=args.batch_size, **kwargs)
-    test_loader = torch.utils.data.DataLoader(
-        datasets.FashionMNIST('../../data/fashionmnist/', train=False, transform=transforms.Compose([
-            transforms.ToTensor(),
-        ])),
-        batch_size=args.batch_size, shuffle=True, **kwargs)
-
-    if args.embed:
-        pca = embed_pca(fashion_data, args.embed_dim)
-        model = MLP(args.embed_dim, 10, 1000, 3).to(device)
-    else:
-        model = MnistNet().to(device)
-elif args.dataset == 'cifar10':
+if args.dataset == 'cifar10':
     transform = transforms.Compose([transforms.ToTensor()])
 
     transform_train = transforms.Compose([
@@ -250,26 +220,12 @@ elif args.dataset == 'cifar10':
 
 optimizer = optim.Adam(model.parameters(), lr=0.0001)
 
-def RobustnessT(eps1, eps2):
-    return lambda model, use_cuda, network_output: RobustnessDatasetConstraint(model, eps1, eps2, use_cuda=use_cuda, network_output=network_output)
-
-def RobustnessG(eps, delta):
-    return lambda model, use_cuda, network_output: RobustnessConstraint(model, eps, delta, use_cuda, network_output=network_output)
-
-def LipschitzT(L):
-    return lambda model, use_cuda, network_output: LipschitzDatasetConstraint(model, L, use_cuda, network_output=network_output)
-
-def LipschitzG(eps, L):
-    return lambda model, use_cuda, network_output: LipschitzConstraint(model, eps=eps, l=L, use_cuda=use_cuda, network_output=network_output)
 
 def CSimilarityT(delta):
     return lambda model, use_cuda, network_output: CifarDatasetConstraint(model, delta, use_cuda, network_output=network_output)
 
-def CSimilarityG(eps, delta):
-    return lambda model, use_cuda, network_output: CifarConstraint(model, eps, delta, use_cuda, network_output=network_output)
-
-def SegmentG(eps, delta):
-    return lambda model, use_cuda, network_output: PairLineRobustnessConstraint(model, eps, delta, use_cuda, network_output=network_output)
+# def CSimilarityG(eps, delta):
+#     return lambda model, use_cuda, network_output: CifarConstraint(model, eps, delta, use_cuda, network_output=network_output)
 
 constraint = eval(args.constraint)(model, use_cuda, network_output=args.network_output)
 oracle = DL2_Oracle(learning_rate=0.01, net=model, constraint=constraint, use_cuda=use_cuda)
