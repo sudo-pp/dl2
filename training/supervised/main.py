@@ -88,6 +88,8 @@ def train(args, oracle, net, device, train_loader, optimizer, epoch, pca=None):
             y_batches.append(y_batch[i:(i + k)])
 
         net.eval()
+        
+        import ipdb; ipdb.set_trace()
 
         if oracle.constraint.n_gvars > 0:
             domains = oracle.constraint.get_domains(x_batches, y_batches)
@@ -224,8 +226,8 @@ optimizer = optim.Adam(model.parameters(), lr=0.0001)
 def CSimilarityT(delta):
     return lambda model, use_cuda, network_output: CifarDatasetConstraint(model, delta, use_cuda, network_output=network_output)
 
-# def CSimilarityG(eps, delta):
-#     return lambda model, use_cuda, network_output: CifarConstraint(model, eps, delta, use_cuda, network_output=network_output)
+def CSimilarityG(eps, delta):
+    return lambda model, use_cuda, network_output: CifarConstraint(model, eps, delta, use_cuda, network_output=network_output)
 
 constraint = eval(args.constraint)(model, use_cuda, network_output=args.network_output)
 oracle = DL2_Oracle(learning_rate=0.01, net=model, constraint=constraint, use_cuda=use_cuda)
